@@ -119,7 +119,7 @@ function simulateAnalysis(keys) {
 
 // Função para exibir os resultados (atualizada para mostrar todos os padrões)
 function displayResults(data, originalKeys) {
-    // ... (código anterior permanece o mesmo) ...
+    
     
     // Atualiza os detalhes do padrão para todos os casos
     const detailsContent = document.getElementById('patternDetailsContent');
@@ -186,5 +186,5 @@ function displayResults(data, originalKeys) {
         `;
     }
     
-    // ... (restante do código permanece o mesmo) ...
+    
 }
