@@ -9,8 +9,10 @@ Este projeto de pesquisa investiga vulnerabilidades de segurança na geração d
 ### 🎯 Problema Identificado
 
 Atualmente, cerca de 70 milhões de NFC-e são emitidas diariamente no Brasil, contendo dados sensíveis como:
+
 •	Informações empresariais (vendas, faturamento, produtos)
 •	Dados pessoais dos consumidores (nome, CPF, endereço, telefone)
+
 Vulnerabilidade Crítica: Mais de 70% das empresas do varejo em Campina Grande-PB (dados de 2017) utilizam sistemas que geram chaves de acesso não aleatórias, violando as especificações de segurança da SEFAZ.
 
 ### 🔍 Metodologia de Análise
