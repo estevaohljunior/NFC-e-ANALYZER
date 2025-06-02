@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analisador de Chaves NFC-e</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@4.1.1/animate.min.css">
+    <style>
+        /* Estilos customizados */
+        .vulnerability-high {
+            background-color: #f8d7da;
+            border-left: 4px solid #dc3545;
+        }
+        
+        .vulnerability-medium {
+            background-color: #fff3cd;
+            border-left: 4px solid #ffc107;
+        }
+        
+        .vulnerability-low {
+            background-color: #d1e7dd;
+            border-left: 4px solid #198754;
+        }
+
+        .vulnerability-unknown {
+            background-color: #e2e3e5;
+            border-left: 4px solid #6c757d;
+        }
+
+        .key-component {
+            background-color: #f8f9fa;
+            padding: 0.5rem;
+            margin: 0.25rem 0;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+
+        .highlight-cnf {
+            background-color: #ffd700;
+            padding: 0.2rem;
+            border-radius: 2px;
+        }
+
+        .animate__animated {
+            animation-duration: 0.5s;
+        }
+
+        #copyButton {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 1;
+        }
+
+        .validation-error {
+            border-color: #dc3545;
+        }
+
+        .confidence-meter {
+            height: 10px;
+            background-color: #e9ecef;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+
+        .confidence-fill {
+            height: 100%;
+            background-color: #0d6efd;
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+
+        .pattern-details {
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+
+        .recommendation-box {
+            border-left: 4px solid #0d6efd;
+            padding: 10px 15px;
+            margin-top: 20px;
+            background-color: #f8f9fa;
+        }
+
+        .badge-vulnerability {
+            font-size: 0.9rem;
+            padding: 5px 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="text-center my-5 animate__animated animate__fadeIn">
+            <h1 class="display-4">Analisador de Chaves NFC-e</h1>
+            <p class="lead">Verifique a segurança do padrão de geração do código numérico (cNF)</p>
+        </header>
+
+        <div class="row justify-content-center">
+            <div class="col-md-10">
+                <div class="card shadow-sm animate__animated animate__fadeInUp">
+                    <div class="card-body position-relative">
+                        <button id="copyButton" class="btn btn-outline-secondary btn-sm" style="display: none;">
+                            <i class="bi bi-clipboard"></i> Copiar Resultado
+                        </button>
+                        <form id="analyzeForm">
+                            <div class="mb-3">
+                                <label for="chaves" class="form-label">Chaves de Acesso NFC-e</label>
+                                <div class="position-relative">
+                                    <textarea 
+                                        class="form-control" 
+                                        id="chaves" 
+                                        rows="5" 
+                                        placeholder="Digite uma chave por linha (44 dígitos cada). Exemplo:&#10;25170921138765000243650010000237261123456784&#10;25170921138765000243650010000237271123456784"
+                                        required
+                                    ></textarea>
+                                    <small id="validationMessage" class="text-danger" style="display: none;"></small>
+                                </div>
+                                <div class="form-text">
+                                    Insira pelo menos 2 chaves da mesma empresa para uma análise precisa.
+                                </div>
+                            </div>
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary">
+                                    <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" style="display: none;"></span>
+                                    Analisar Padrão cNF
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Resultado da análise -->
+                <div id="resultado" class="mt-4 animate__animated animate__fadeIn" style="display: none;">
+                    <div class="card shadow">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">
+                                <i class="bi bi-file-earmark-text-fill me-2"></i>
+                                Resultado da Análise
+                            </h5>
+                            <span class="badge rounded-pill badge-vulnerability" id="vulnerabilityBadge"></span>
+                        </div>
+                        <div class="card-body">
+                            <div class="alert" id="resultadoAlert" role="alert">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <h4 class="alert-heading" id="padraoDetectado"></h4>
+                                        <p id="descricaoResultado" class="mb-2"></p>
+                                    </div>
+                                    <div id="confidenceContainer" style="min-width: 120px;">
+                                        <div class="text-end mb-1">
+                                            <small class="text-muted">Confiança:</small>
+                                            <span id="confidenceValue" class="fw-bold">0%</span>
+                                        </div>
+                                        <div class="confidence-meter">
+                                            <div class="confidence-fill" id="confidenceFill"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="pattern-details">
+                                <h6><i class="bi bi-info-circle-fill me-2"></i>Detalhes do Padrão</h6>
+                                <div id="patternDetailsContent" class="mt-2"></div>
+                            </div>
+
+                            <div class="recommendation-box">
+                                <h6><i class="bi bi-exclamation-triangle-fill me-2"></i>Recomendação</h6>
+                                <p id="recommendationText" class="mb-0 mt-2"></p>
+                            </div>
+
+                            <div class="mt-4">
+                                <h6><i class="bi bi-key-fill me-2"></i>Detalhes das Chaves Analisadas</h6>
+                                <div class="accordion mt-3" id="keyDetailsAccordion">
+                                    <div class="accordion-item">
+                                        <h2 class="accordion-header">
+                                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseKeys">
+                                                Visualizar chaves e componentes
+                                            </button>
+                                        </h2>
+                                        <div id="collapseKeys" class="accordion-collapse collapse" data-bs-parent="#keyDetailsAccordion">
+                                            <div class="accordion-body">
+                                                <div id="keyDetails"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <footer class="mt-5 py-3 text-center text-muted">
+            <small>
+                Analisador de Padrões cNF - Verificação de segurança conforme recomendações da Receita Federal
+                <br>
+                <span id="currentYear"></span>
+            </small>
+        </footer>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Atualiza o ano no footer
+            document.getElementById('currentYear').textContent = new Date().getFullYear();
+
+            // Formulário de análise
+            const analyzeForm = document.getElementById('analyzeForm');
+            const resultadoDiv = document.getElementById('resultado');
+            const spinner = analyzeForm.querySelector('.spinner-border');
+
+            analyzeForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const chavesTextarea = document.getElementById('chaves');
+                const chaves = chavesTextarea.value.trim().split('\n').filter(key => key.trim() !== '');
+                
+                // Validação básica
+                if (chaves.length === 0) {
+                    showValidationMessage('Por favor, insira pelo menos uma chave de acesso');
+                    return;
+                }
+                
+                const invalidKeys = chaves.filter(key => !/^\d{44}$/.test(key.trim()));
+                if (invalidKeys.length > 0) {
+                    showValidationMessage(`Chave inválida encontrada: ${invalidKeys[0]}. Todas as chaves devem ter 44 dígitos.`);
+                    return;
+                }
+                
+                hideValidationMessage();
+                
+                // Mostra spinner
+                spinner.style.display = 'inline-block';
+                analyzeForm.querySelector('button[type="submit"]').disabled = true;
+                
+                // Simula envio AJAX (substituir pela chamada real à API)
+                setTimeout(() => {
+                    // Aqui você substituiria pelo fetch() real para seu endpoint /analyze
+                    simulateAnalysis(chaves);
+                    
+                    // Esconde spinner
+                    spinner.style.display = 'none';
+                    analyzeForm.querySelector('button[type="submit"]').disabled = false;
+                }, 1000);
+            });
+
+            function showValidationMessage(message) {
+                const validationMessage = document.getElementById('validationMessage');
+                validationMessage.textContent = message;
+                validationMessage.style.display = 'block';
+                document.getElementById('chaves').classList.add('validation-error');
+            }
+
+            function hideValidationMessage() {
+                document.getElementById('validationMessage').style.display = 'none';
+                document.getElementById('chaves').classList.remove('validation-error');
+            }
+
+            // Função de simulação - substituir pela chamada real à API
+            function simulateAnalysis(keys) {
+                // Esta é uma simulação - na implementação real você faria um fetch() para o endpoint /analyze
+                console.log("Chaves para análise:", keys);
+                
+                // Simula diferentes respostas baseadas no conteúdo das chaves
+                let response;
+                
+                if (keys.every(key => key.slice(35, 43) === keys[0].slice(35, 43))) {
+                    // Todas as chaves com mesmo cNF (Fixo)
+                    response = {
+                        pattern: "F",
+                        vulnerability_level: "ALTO",
+                        vulnerability_score: 100,
+                        description: "O código numérico (cNF) é fixo para todas as notas",
+                        confidence: 1.0,
+                        details: {
+                            fixed_value: keys[0].slice(35, 43)
+                        },
+                        recommendation: "Recomendação CRÍTICA: Alterar imediatamente para um gerador aleatório seguro"
+                    };
+                } else if (keys.every((key, i) => i === 0 || 
+                          parseInt(key.slice(35, 43)) === parseInt(keys[i-1].slice(35, 43)) + 1)) {
+                    // Incremental simples
+                    response = {
+                        pattern: "I",
+                        vulnerability_level: "MÉDIO",
+                        vulnerability_score: 60,
+                        description: "O código numérico (cNF) segue um padrão incremental",
+                        confidence: 0.9,
+                        details: {
+                            increment: 1,
+                            type: "constant"
+                        },
+                        recommendation: "Recomendação: Melhorar o sistema para usar geração aleatória"
+                    };
+                } else {
+                    // Aleatório (padrão mais seguro)
+                    response = {
+                        pattern: "A",
+                        vulnerability_level: "BAIXO",
+                        vulnerability_score: 10,
+                        description: "O código numérico (cNF) aparenta ser gerado aleatoriamente",
+                        confidence: 0.95,
+                        details: {
+                            randomness_test: "passed"
+                        },
+                        recommendation: "Configuração adequada, manter o sistema atual"
+                    };
+                }
+                
+                displayResults(response, keys);
+            }
+
+            function displayResults(data, originalKeys) {
+                // Mostra a seção de resultados
+                resultadoDiv.style.display = 'block';
+                
+                // Atualiza o padrão detectado
+                document.getElementById('padraoDetectado').textContent = 
+                    `Padrão Detectado: ${data.pattern} (${data.vulnerability_level})`;
+                document.getElementById('descricaoResultado').textContent = data.description;
+                
+                // Atualiza o badge de vulnerabilidade
+                const vulnerabilityBadge = document.getElementById('vulnerabilityBadge');
+                vulnerabilityBadge.textContent = data.vulnerability_level;
+                vulnerabilityBadge.className = `badge rounded-pill badge-vulnerability ${
+                    data.vulnerability_level === 'ALTO' ? 'bg-danger' : 
+                    data.vulnerability_level === 'MÉDIO' ? 'bg-warning text-dark' : 'bg-success'
+                }`;
+                
+                // Atualiza a barra de confiança
+                const confidencePercent = Math.round(data.confidence * 100);
+                document.getElementById('confidenceValue').textContent = `${confidencePercent}%`;
+                document.getElementById('confidenceFill').style.width = `${confidencePercent}%`;
+                
+                // Atualiza os detalhes do padrão
+                const detailsContent = document.getElementById('patternDetailsContent');
+                detailsContent.innerHTML = '';
+                
+                if (data.pattern === 'F') {
+                    detailsContent.innerHTML = `
+                        <p>O código numérico (cNF) é sempre o mesmo valor em todas as notas fiscais:</p>
+                        <div class="alert alert-secondary">
+                            <strong>Valor fixo:</strong> <code>${data.details.fixed_value}</code>
+                        </div>
+                        <p class="text-danger">Este é o padrão mais vulnerável, permitindo fácil previsão de chaves futuras.</p>
+                    `;
+                } else if (data.pattern === 'I') {
+                    detailsContent.innerHTML = `
+                        <p>O código numérico (cNF) aumenta de forma incremental:</p>
+                        <ul>
+                            <li><strong>Tipo:</strong> ${data.details.type === 'constant' ? 'Incremento constante' : 'Incremento variável'}</li>
+                            ${data.details.increment ? `<li><strong>Valor do incremento:</strong> ${data.details.increment}</li>` : ''}
+                        </ul>
+                    `;
+                } else if (data.pattern === 'A') {
+                    detailsContent.innerHTML = `
+                        <p>O código numérico (cNF) passou nos testes básicos de aleatoriedade:</p>
+                        <ul>
+                            <li>Distribuição uniforme de dígitos</li>
+                            <li>Baixa taxa de repetição de valores</li>
+                            <li>Variação adequada entre valores consecutivos</li>
+                        </ul>
+                    `;
+                }
+                
+                // Atualiza a recomendação
+                document.getElementById('recommendationText').textContent = data.recommendation;
+                
+                // Atualiza os detalhes das chaves (opcional)
+                const keyDetails = document.getElementById('keyDetails');
+                keyDetails.innerHTML = '';
+                
+                originalKeys.slice(0, 5).forEach((key, i) => {
+                    const nNF = key.slice(25, 34);
+                    const cNF = key.slice(35, 43);
+                    
+                    const keyElement = document.createElement('div');
+                    keyElement.className = 'mb-3';
+                    keyElement.innerHTML = `
+                        <div class="key-component">
+                            <strong>Chave ${i+1}:</strong> ${key.substring(0, 25)}<span class="highlight-cnf">${nNF}</span>${key.substring(34, 35)}<span class="highlight-cnf" style="background-color: #ff9999;">${cNF}</span>${key.substring(43)}
+                        </div>
+                        <div class="d-flex">
+                            <div class="me-3"><strong>nNF:</strong> ${nNF}</div>
+                            <div><strong>cNF:</strong> ${cNF}</div>
+                        </div>
+                    `;
+                    keyDetails.appendChild(keyElement);
+                });
+                
+                if (originalKeys.length > 5) {
+                    keyDetails.innerHTML += `<p class="text-muted">+ ${originalKeys.length - 5} chaves não exibidas</p>`;
+                }
+                
+                // Rola a página até os resultados
+                resultadoDiv.scrollIntoView({ behavior: 'smooth' });
+            }
+        });
+    </script>
+</body>
+</html>
