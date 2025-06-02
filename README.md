@@ -34,23 +34,31 @@ Investigar se os sistemas utilizados por empresas do varejo atendem às normas d
 
 #### API REST de Análise
 •	Entrada: Lista de chaves de acesso
+
 •	Saída: Classificação do método de geração e nível de vulnerabilidade
+
 •	Tecnologia: Framework backend maduro (Flask)
 
 #### ⚠️ Riscos Identificados
 #### Para Empresas
 •	Exposição de dados comerciais sensíveis
+
 •	Vulnerabilidade a extorsão e chantagem
+
 •	Violação da LGPD (Lei Geral de Proteção de Dados)
 
 #### Para Consumidores
 •	Exposição de dados pessoais
+
 •	Risco de golpes com boletos falsos
+
 •	Uso indevido de informações pessoais
 
 ### 📊 Impacto Esperado
 •	Relatório de alertas para governo, empresas, consumidores e contadores
+
 •	Conscientização sobre vulnerabilidades no ecossistema fiscal
+
 •	Propostas de melhorias para sistemas existentes
 
 ### 🔧 Metodologia de Execução
@@ -72,11 +80,15 @@ Investigar se os sistemas utilizados por empresas do varejo atendem às normas d
 #### Conformidade Legal
 
 •	Alinhamento com a LGPD (Lei 13.709/2018)
+
 •	Suporte às diretrizes de governo eletrônico
+
 •	Fortalecimento da segurança fiscal nacional
 
 #### Impacto Social
 •	Proteção da privacidade dos consumidores
+
 •	Segurança empresarial no ambiente digital
+
 •	Modernização do ecossistema fiscal brasileiro
 ________________________________________
